@@ -1,5 +1,5 @@
 //! Implementation of the SHA1-HMAC Time-Based One-Time Password Algorithm.
-//! 
+//!
 //! Passes the IETF test vectors from [RFC 6238](https://www.rfc-editor.org/rfc/rfc6238).
 
 use crate::Sha1;
@@ -92,8 +92,14 @@ mod tests {
 
     #[test]
     fn test_short_duration() {
-        let totp = Totp::new(SECRET).with_interval(Duration::from_secs(1)).with_length(6).unwrap();
-        assert_eq!(totp.at(SystemTime::UNIX_EPOCH + Duration::from_secs(1)), "287082");
+        let totp = Totp::new(SECRET)
+            .with_interval(Duration::from_secs(1))
+            .with_length(6)
+            .unwrap();
+        assert_eq!(
+            totp.at(SystemTime::UNIX_EPOCH + Duration::from_secs(1)),
+            "287082"
+        );
     }
 
     #[test]

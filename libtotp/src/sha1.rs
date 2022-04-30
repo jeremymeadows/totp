@@ -1,9 +1,9 @@
 //! Implementation of the SHA-1 160-bit hash function.
 //!
-//! Passes the NIST test vectors for the 
-//! [hashing algorithm](https://csrc.nist.gov/csrc/media/projects/cryptographic-standards-and-guidelines/documents/examples/sha1.pdf) 
+//! Passes the NIST test vectors for the
+//! [hashing algorithm](https://csrc.nist.gov/csrc/media/projects/cryptographic-standards-and-guidelines/documents/examples/sha1.pdf)
 //! and the
-//! [HMAC algorithm](https://csrc.nist.gov/CSRC/media/Projects/Cryptographic-Standards-and-Guidelines/documents/examples/HMAC_SHA1.pdf)
+//! [HMAC algorithm](https://csrc.nist.gov/csrc/media/projects/cryptographic-standards-and-guidelines/documents/examples/hmac_sha1.pdf)
 
 /// Number of bytes in each block.
 const BLOCK_SIZE: usize = 64;
@@ -158,8 +158,8 @@ impl Sha1 {
 
         let h: [u32; 5] = Self::hash(
             &[
-                o_pad.as_slice(),
-                Self::hash(&[i_pad.as_slice(), self.data.as_slice()].concat())
+                &o_pad,
+                Self::hash(&[&i_pad, self.data.as_slice()].concat())
                     .as_bytes()
                     .as_slice(),
             ]
