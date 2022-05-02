@@ -1,7 +1,7 @@
 //! Implementation of the SHA-1 160-bit hash function.
 //!
 //! Passes the NIST test vectors for the
-//! [hashing algorithm](https://csrc.nist.gov/csrc/media/projects/cryptographic-standards-and-guidelines/documents/examples/sha1.pdf)
+//! [hashing algorithm](https://csrc.nist.gov/csrc/media/projects/cryptographic-standards-and-guidelines/documents/examples/sha_all.pdf)
 //! and the
 //! [HMAC algorithm](https://csrc.nist.gov/csrc/media/projects/cryptographic-standards-and-guidelines/documents/examples/hmac_sha1.pdf)
 
@@ -13,12 +13,12 @@ const OUTPUT_SIZE: usize = 20;
 /// A SHA-1 hasher.
 pub struct Sha1 {
     data: Vec<u8>,
-    h: (u32, u32, u32, u32, u32),
+    h: [u32; 5],
 }
 
 /// The completed digest for a given hash.
 pub struct Digest {
-    h: (u32, u32, u32, u32, u32),
+    h: [u32; 5],
 }
 
 impl Sha1 {
@@ -26,7 +26,7 @@ impl Sha1 {
     pub fn new() -> Self {
         Self {
             data: Vec::new(),
-            h: (0x67452301, 0xEFCDAB89, 0x98BADCFE, 0x10325476, 0xC3D2E1F0),
+            h: [0x67452301, 0xEFCDAB89, 0x98BADCFE, 0x10325476, 0xC3D2E1F0],
         }
     }
 
@@ -53,8 +53,10 @@ impl Sha1 {
     fn pad(&self) -> Vec<u8> {
         let mut data = self.data.clone();
         let mut padding = vec![0x80_u8];
-        padding
-            .append(&mut ([0x00_u8].repeat(BLOCK_SIZE - 1 - (self.data.len() + 8) % BLOCK_SIZE)));
+        padding.append(
+            &mut ([0x00_u8]
+                .repeat(BLOCK_SIZE - 1 - (self.data.len() + u64::BITS as usize / 8) % BLOCK_SIZE)),
+        );
 
         data.append(&mut padding);
         data.append(&mut Vec::from((self.data.len() as u64 * 8).to_be_bytes()));
@@ -96,7 +98,8 @@ impl Sha1 {
     pub fn digest(&mut self) -> Digest {
         for block in self.blocks() {
             let expanded_block = Self::expand_block(&block);
-            let (mut a, mut b, mut c, mut d, mut e) = self.h;
+            let (mut a, mut b, mut c, mut d, mut e) =
+                (self.h[0], self.h[1], self.h[2], self.h[3], self.h[4]);
 
             for i in 0..80 {
                 let (f, k): (u32, u32) = if i < 20 {
@@ -122,13 +125,13 @@ impl Sha1 {
                 a = tmp as u32;
             }
 
-            self.h = (
-                self.h.0.wrapping_add(a),
-                self.h.1.wrapping_add(b),
-                self.h.2.wrapping_add(c),
-                self.h.3.wrapping_add(d),
-                self.h.4.wrapping_add(e),
-            );
+            self.h = [
+                self.h[0].wrapping_add(a),
+                self.h[1].wrapping_add(b),
+                self.h[2].wrapping_add(c),
+                self.h[3].wrapping_add(d),
+                self.h[4].wrapping_add(e),
+            ];
         }
 
         Digest { h: self.h }
@@ -173,7 +176,7 @@ impl Sha1 {
         .unwrap();
 
         Digest {
-            h: (h[0], h[1], h[2], h[3], h[4]),
+            h: [h[0], h[1], h[2], h[3], h[4]],
         }
     }
 }
@@ -181,26 +184,18 @@ impl Sha1 {
 impl Digest {
     /// Gets a hex-string representation of the digest.
     pub fn to_string(&self) -> String {
-        format!(
-            "{:08x}{:08x}{:08x}{:08x}{:08x}",
-            self.h.0, self.h.1, self.h.2, self.h.3, self.h.4
-        )
+        self.h.map(|e| format!("{:08x}", e)).join("")
     }
 
     /// Gets the digest as an array of bytes.
     pub fn as_bytes(&self) -> [u8; OUTPUT_SIZE] {
-        [
-            self.h.0.to_be_bytes(),
-            self.h.1.to_be_bytes(),
-            self.h.2.to_be_bytes(),
-            self.h.3.to_be_bytes(),
-            self.h.4.to_be_bytes(),
-        ]
-        .iter()
-        .flat_map(|e| e.to_owned())
-        .collect::<Vec<u8>>()
-        .try_into()
-        .unwrap()
+        self.h
+            .map(|e| e.to_be_bytes())
+            .iter()
+            .flat_map(|e| e.to_owned())
+            .collect::<Vec<u8>>()
+            .try_into()
+            .unwrap()
     }
 }
 
@@ -209,21 +204,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_1() {
-        let hash = Sha1::hash(b"abc");
-
-        assert_eq!(hash.to_string(), "a9993e364706816aba3e25717850c26c9cd0d89d");
-        assert_eq!(
-            hash.as_bytes(),
-            [
-                0xa9, 0x99, 0x3e, 0x36, 0x47, 0x06, 0x81, 0x6a, 0xba, 0x3e, 0x25, 0x71, 0x78, 0x50,
-                0xc2, 0x6c, 0x9c, 0xd0, 0xd8, 0x9d
-            ]
-        );
-    }
-
-    #[test]
-    fn test_2() {
+    fn empty_message() {
         let hash = Sha1::hash(b"");
 
         assert_eq!(hash.to_string(), "da39a3ee5e6b4b0d3255bfef95601890afd80709");
@@ -237,7 +218,21 @@ mod tests {
     }
 
     #[test]
-    fn test_3() {
+    fn one_block_message() {
+        let hash = Sha1::hash(b"abc");
+
+        assert_eq!(hash.to_string(), "a9993e364706816aba3e25717850c26c9cd0d89d");
+        assert_eq!(
+            hash.as_bytes(),
+            [
+                0xa9, 0x99, 0x3e, 0x36, 0x47, 0x06, 0x81, 0x6a, 0xba, 0x3e, 0x25, 0x71, 0x78, 0x50,
+                0xc2, 0x6c, 0x9c, 0xd0, 0xd8, 0x9d
+            ]
+        );
+    }
+
+    #[test]
+    fn two_block_message() {
         let hash = Sha1::hash(b"abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq");
 
         assert_eq!(hash.to_string(), "84983e441c3bd26ebaae4aa1f95129e5e54670f1");

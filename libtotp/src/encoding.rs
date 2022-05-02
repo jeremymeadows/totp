@@ -9,7 +9,7 @@ const B64_ALPHABET: &str = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz
 
 const B32_ALPHABET: &str = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
 
-const B16_ALPHABET: &str = "0123456789ABCDEF";
+const B16_ALPHABET: &str = "0123456789abcdef";
 
 // Generates an `encode` method with the given `name` for the specified `alphabet`, padding the
 // result out to `pad` bytes.
@@ -178,22 +178,22 @@ mod tests {
             b16_encode:
                 test_encode_1: (b"", ""),
                 test_encode_2: (b"f", "66"),
-                test_encode_3: (b"fo", "666F"),
-                test_encode_4: (b"foo", "666F6F"),
-                test_encode_5: (b"foob", "666F6F62"),
-                test_encode_6: (b"fooba", "666F6F6261"),
-                test_encode_7: (b"foobar", "666F6F626172"),
+                test_encode_3: (b"fo", "666f"),
+                test_encode_4: (b"foo", "666f6f"),
+                test_encode_5: (b"foob", "666f6f62"),
+                test_encode_6: (b"fooba", "666f6f6261"),
+                test_encode_7: (b"foobar", "666f6f626172"),
         }
 
         test! {
             b16_decode:
                 test_decode_1: ("", b""),
                 test_decode_2: ("66", b"f"),
-                test_decode_3: ("666F", b"fo"),
-                test_decode_4: ("666F6F", b"foo"),
-                test_decode_5: ("666F6F62", b"foob"),
-                test_decode_6: ("666F6F6261", b"fooba"),
-                test_decode_7: ("666F6F626172", b"foobar"),
+                test_decode_3: ("666f", b"fo"),
+                test_decode_4: ("666f6f", b"foo"),
+                test_decode_5: ("666f6f62", b"foob"),
+                test_decode_6: ("666f6f6261", b"fooba"),
+                test_decode_7: ("666f6f626172", b"foobar"),
         }
     }
 
